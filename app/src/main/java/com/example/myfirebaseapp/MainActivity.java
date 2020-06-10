@@ -30,8 +30,8 @@ public class MainActivity extends AppCompatActivity {
         initialize();
 
         m_Database=FirebaseDatabase.getInstance();//this method will get the firebase whole instance;
-        m_Ref=m_Database.getReference();//this will take up the root node of the firebase json db.
-
+        m_Ref=m_Database.getReference("users");//this will take up the root node of the firebase json db.
+        //here we are writing 'users' which will basically create a node inside the root instance with the same name.
         m_SendData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -48,11 +48,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void readData() {
 
-        //this function of ref basically works on the current state of node and not on the child or data cretaed
-        //and inserted and will be called eventually after the new data is created so like if we are fetching it
-        //and changing it somewhere then that change will also be reflected,also datasnapshot contains the firebase
-        //instance data
-        m_Ref.addValueEventListener(new ValueEventListener() {
+        //this function is quite different and if implemented it will not automatically process the data and will
+        //basically read it only when triggered and not automatically.
+        m_Ref.child("user1").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 String data=dataSnapshot.getValue().toString();
@@ -68,8 +66,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void sendData() {
         String writeData=m_writeData.getText().toString();
-        m_Ref.setValue(writeData);//this function will attach the data with rootref as key and writedata as value.
+        m_Ref.child("user1").setValue(writeData);//this function will attach the data with rootref as key and writedata as value.
         //this data will always be updated and will not be added with new data by this method.
+        //here we have provided a child which will create a dependency as users->user1.
     }
 
     private void initialize() {
