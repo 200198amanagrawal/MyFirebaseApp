@@ -1,6 +1,7 @@
 package com.example.myfirebaseapp;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
@@ -13,21 +14,24 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity {
 
-    private EditText m_writeData;
+    private EditText m_writeData,m_writeDataInt;
     private Button m_SendData,m_ReadData;
     private TextView m_data;
 
     private FirebaseDatabase m_Database;
     private DatabaseReference m_Ref;
-    private ValueEventListener listener;
     private String TAG="MyTag";
 
     @Override
@@ -47,20 +51,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        //the following code must always be written in this way and not inside a onclicklistner
-        //otherwise it will create more listeners.
-        listener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String data = dataSnapshot.getValue().toString();
-                m_data.setText(data);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
-        };
-
         m_ReadData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -68,16 +58,34 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        m_Ref.child("user1").addValueEventListener(listener);
     }
 
     private void readData() {
 
-        m_Ref.child("user1").addListenerForSingleValueEvent(new ValueEventListener() {
+        m_Ref.addChildEventListener(new ChildEventListener() {
+
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String data=dataSnapshot.getValue().toString();
-                m_data.setText(data);
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                Map<String,Object> data= (Map<String, Object>) dataSnapshot.getValue();
+                m_data.append(data.get("Name").toString()+data.get("Age"));
+                //this function will iteratively call the child and then will present the data
+                //here the datasnapshot consists each and every map of name and age.
+                Log.d(TAG, "onChildAdded: "+data.get("Name").toString()+data.get("Age"));
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
             }
 
             @Override
@@ -87,35 +95,32 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        m_Ref.child("user1").removeEventListener(listener);
-        //this is for memory cleanup and all
-    }
 
     private void sendData() {
         String writeData=m_writeData.getText().toString();
-        m_Ref.child("user1").setValue(writeData)
-        .addOnSuccessListener(new OnSuccessListener<Void>() {
-            @Override
-            public void onSuccess(Void aVoid) {
-                //just gives a noti for successful insertion.
-                Toast.makeText(MainActivity.this, "Successfully inserted", Toast.LENGTH_SHORT).show();
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                //gives a failure report
-                Log.d(TAG, "onFailure: "+e.getMessage());
-            }
-        });//this function will attach the data with rootref as key and writedata as value.
-        //this data will always be updated and will not be added with new data by this method.
-        //here we have provided a child which will create a dependency as users->user1.
+        int writeDataInt=Integer.parseInt(m_writeDataInt.getText().toString());
+        String key=m_Ref.push().getKey();//this will always generate a Push id which is a unique id and using this
+        //we can insert the data and it will not even udpate thr code
+
+        Map<String ,Object> insertValues=new HashMap<>();
+        insertValues.put("Name",writeData);
+        insertValues.put("Age",writeDataInt);
+        m_Ref.child(key).updateChildren(insertValues);//recommended way
+        /**
+         * an important code to update the values
+         * as we know the ref are in child parent relationship and in mref is users so to update users1 data
+         * we will mannualy update it as user1/Name,user1/Age etc.
+         */
+        Map<String,Object> updateValues=new HashMap<>();
+        updateValues.put("/user1/Name",writeData);
+        updateValues.put("user1/Age",writeDataInt);
+        m_Ref.updateChildren(updateValues);
+        m_Ref.child("user1").removeValue();//will delete the node
     }
 
     private void initialize() {
         m_writeData=findViewById(R.id.write_data);
+        m_writeDataInt=findViewById(R.id.write_int_data);
         m_data=findViewById(R.id.text_data);
         m_SendData=findViewById(R.id.send_data);
         m_ReadData=findViewById(R.id.read_data);
