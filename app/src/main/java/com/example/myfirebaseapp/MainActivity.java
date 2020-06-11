@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseDatabase m_Database;
     private DatabaseReference m_Ref;
     private String TAG="MyTag";
+    private ChildEventListener listener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,26 +52,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        m_ReadData.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                readData();
-            }
-        });
+        m_ReadData.setVisibility(View.INVISIBLE);
 
-    }
-
-    private void readData() {
-
-        m_Ref.addChildEventListener(new ChildEventListener() {
+        listener = new ChildEventListener() {
 
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-                Map<String,Object> data= (Map<String, Object>) dataSnapshot.getValue();
-                m_data.append(data.get("Name").toString()+data.get("Age"));
-                //this function will iteratively call the child and then will present the data
-                //here the datasnapshot consists each and every map of name and age.
-                Log.d(TAG, "onChildAdded: "+data.get("Name").toString()+data.get("Age"));
+                Person person=dataSnapshot.getValue(Person.class);
+                m_data.append(person.getAge()+" "+person.getName());
             }
 
             @Override
@@ -92,30 +81,23 @@ public class MainActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError databaseError) {
 //gives a failure report similar to OnFailure
             }
-        });
+        };
+        m_Ref.addChildEventListener(listener);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        m_Ref.removeEventListener(listener);
+    }
 
     private void sendData() {
         String writeData=m_writeData.getText().toString();
-        int writeDataInt=Integer.parseInt(m_writeDataInt.getText().toString());
-        String key=m_Ref.push().getKey();//this will always generate a Push id which is a unique id and using this
-        //we can insert the data and it will not even udpate thr code
+        String writeDataInt=m_writeDataInt.getText().toString();
+        String key=m_Ref.push().getKey();
+        Person person=new Person(writeData,writeDataInt);
+        m_Ref.child(key).setValue(person);
 
-        Map<String ,Object> insertValues=new HashMap<>();
-        insertValues.put("Name",writeData);
-        insertValues.put("Age",writeDataInt);
-        m_Ref.child(key).updateChildren(insertValues);//recommended way
-        /**
-         * an important code to update the values
-         * as we know the ref are in child parent relationship and in mref is users so to update users1 data
-         * we will mannualy update it as user1/Name,user1/Age etc.
-         */
-        Map<String,Object> updateValues=new HashMap<>();
-        updateValues.put("/user1/Name",writeData);
-        updateValues.put("user1/Age",writeDataInt);
-        m_Ref.updateChildren(updateValues);
-        m_Ref.child("user1").removeValue();//will delete the node
     }
 
     private void initialize() {
