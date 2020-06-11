@@ -4,11 +4,15 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -23,6 +27,9 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseDatabase m_Database;
     private DatabaseReference m_Ref;
+    private ValueEventListener listener;
+    private String TAG="MyTag";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -38,18 +45,34 @@ public class MainActivity extends AppCompatActivity {
                 sendData();
             }
         });
+
+
+        //the following code must always be written in this way and not inside a onclicklistner
+        //otherwise it will create more listeners.
+        listener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                String data = dataSnapshot.getValue().toString();
+                m_data.setText(data);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        };
+
         m_ReadData.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 readData();
             }
         });
+
+        m_Ref.child("user1").addValueEventListener(listener);
     }
 
     private void readData() {
 
-        //this function is quite different and if implemented it will not automatically process the data and will
-        //basically read it only when triggered and not automatically.
         m_Ref.child("user1").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -59,14 +82,34 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-
+//gives a failure report similar to OnFailure
             }
         });
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        m_Ref.child("user1").removeEventListener(listener);
+        //this is for memory cleanup and all
+    }
+
     private void sendData() {
         String writeData=m_writeData.getText().toString();
-        m_Ref.child("user1").setValue(writeData);//this function will attach the data with rootref as key and writedata as value.
+        m_Ref.child("user1").setValue(writeData)
+        .addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                //just gives a noti for successful insertion.
+                Toast.makeText(MainActivity.this, "Successfully inserted", Toast.LENGTH_SHORT).show();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                //gives a failure report
+                Log.d(TAG, "onFailure: "+e.getMessage());
+            }
+        });//this function will attach the data with rootref as key and writedata as value.
         //this data will always be updated and will not be added with new data by this method.
         //here we have provided a child which will create a dependency as users->user1.
     }
