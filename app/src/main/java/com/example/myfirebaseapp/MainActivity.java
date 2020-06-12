@@ -60,8 +60,11 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-                list.add(dataSnapshot.getValue(User.class));
+                User user=dataSnapshot.getValue(User.class);
+                list.add(user);
+                user.setUid(dataSnapshot.getKey());
                 userAdapter.notifyDataSetChanged();//this will notfy the recycler view for any change in data
+
             }
 
             @Override
@@ -71,7 +74,11 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
-
+                //if we remove the data from adaptor then this function will be called
+                User user=dataSnapshot.getValue(User.class);
+                user.setUid(dataSnapshot.getKey());
+                list.remove(user);
+                userAdapter.notifyDataSetChanged();
             }
 
             @Override

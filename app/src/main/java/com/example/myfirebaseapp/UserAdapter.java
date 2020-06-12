@@ -1,6 +1,7 @@
 package com.example.myfirebaseapp;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +9,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.List;
 
@@ -32,8 +37,33 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.MyHolder> {
     @Override
     public void onBindViewHolder(@NonNull MyHolder holder, int position) {
 
-        User user=mDataList.get(position);//will take up the firebase data at that position
+        final User user=mDataList.get(position);//will take up the firebase data at that position
         holder.textView.setText(user.getName()+" "+user.getAge());
+        holder.textView.setOnClickListener(new View.OnClickListener() {//from the adaptors this partcilar function we set and perform actions over the recvyler view items
+            @Override
+            public void onClick(View v) {
+                Intent intent=new Intent(mContext,DetailActivity.class);
+                intent.putExtra("user_ID",user.getUid());
+                mContext.startActivity(intent);
+            }
+        });
+
+        holder.textView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+
+                String uid=user.getUid();
+                DatabaseReference databaseReference= FirebaseDatabase.getInstance()
+                        .getReference().child("users").child(uid);
+                databaseReference.removeValue().addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+
+                    }
+                });
+                return true;
+            }
+        });
     }
 
     @Override
@@ -50,4 +80,5 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.MyHolder> {
             textView=itemView.findViewById(R.id.textView);
         }
     }
+
 }

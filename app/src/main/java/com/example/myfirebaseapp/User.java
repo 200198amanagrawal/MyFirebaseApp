@@ -6,6 +6,15 @@ public class User {
         this.age = age;
     }
 
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    String uid;
     String name;
     String age;
 
@@ -26,5 +35,14 @@ public class User {
 
     public void setAge(String age) {
         this.age = age;
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof User)
+        {
+            User user= (User) obj;
+            return this.uid.equals(user.getUid());
+        }
+        return false;
     }
 }
