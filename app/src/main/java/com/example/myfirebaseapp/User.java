@@ -1,7 +1,7 @@
 package com.example.myfirebaseapp;
 
-public class Person {
-    public Person(String name, String age) {
+public class User {
+    public User(String name, String age) {
         this.name = name;
         this.age = age;
     }
@@ -9,7 +9,7 @@ public class Person {
     String name;
     String age;
 
-    public Person() {
+    public User() {
     }
 
     public String getName() {

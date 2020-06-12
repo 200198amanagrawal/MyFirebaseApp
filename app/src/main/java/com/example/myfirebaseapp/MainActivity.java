@@ -3,26 +3,23 @@ package com.example.myfirebaseapp;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -34,6 +31,9 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseReference m_Ref;
     private String TAG="MyTag";
     private ChildEventListener listener;
+    private RecyclerView recyclerView;
+    private UserAdapter userAdapter;
+    private List<User> list;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,15 +51,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        list=new ArrayList<>();
 
         m_ReadData.setVisibility(View.INVISIBLE);
 
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        userAdapter=new UserAdapter(this,list);
+        recyclerView.setAdapter(userAdapter);
         listener = new ChildEventListener() {
 
             @Override
             public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-                Person person=dataSnapshot.getValue(Person.class);
-                m_data.append(person.getAge()+" "+person.getName());
+                list.add(dataSnapshot.getValue(User.class));
+                userAdapter.notifyDataSetChanged();//this will notfy the recycler view for any change in data
             }
 
             @Override
@@ -95,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         String writeData=m_writeData.getText().toString();
         String writeDataInt=m_writeDataInt.getText().toString();
         String key=m_Ref.push().getKey();
-        Person person=new Person(writeData,writeDataInt);
+        User person=new User(writeData,writeDataInt);
         m_Ref.child(key).setValue(person);
 
     }
@@ -106,5 +110,6 @@ public class MainActivity extends AppCompatActivity {
         m_data=findViewById(R.id.text_data);
         m_SendData=findViewById(R.id.send_data);
         m_ReadData=findViewById(R.id.read_data);
+        recyclerView=findViewById(R.id.user_recyclerview);
     }
 }
