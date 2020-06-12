@@ -25,8 +25,6 @@ public class MainActivity extends AppCompatActivity {
 
     private EditText m_writeData,m_writeDataInt;
     private Button m_SendData,m_ReadData;
-    private TextView m_data;
-
     private FirebaseDatabase m_Database;
     private DatabaseReference m_Ref;
     private String TAG="MyTag";
@@ -107,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
     private void initialize() {
         m_writeData=findViewById(R.id.write_data);
         m_writeDataInt=findViewById(R.id.write_int_data);
-        m_data=findViewById(R.id.text_data);
         m_SendData=findViewById(R.id.send_data);
         m_ReadData=findViewById(R.id.read_data);
         recyclerView=findViewById(R.id.user_recyclerview);
