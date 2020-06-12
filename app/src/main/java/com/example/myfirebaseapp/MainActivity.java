@@ -17,6 +17,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private UserAdapter userAdapter;
     private List<User> list;
+    private ValueEventListener mQueryEventListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,7 +93,25 @@ public class MainActivity extends AppCompatActivity {
 //gives a failure report similar to OnFailure
             }
         };
-        m_Ref.addChildEventListener(listener);
+       // m_Ref.addChildEventListener(listener);
+
+        mQueryEventListener=new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                for (DataSnapshot snapshot:dataSnapshot.getChildren())
+                {
+                    User user=snapshot.getValue(User.class);
+                    list.add(user);
+                }
+                userAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
     }
 
     @Override
@@ -101,11 +121,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendData() {
-        String writeData=m_writeData.getText().toString();
-        String writeDataInt=m_writeDataInt.getText().toString();
-        String key=m_Ref.push().getKey();
-        User person=new User(writeData,writeDataInt);
-        m_Ref.child(key).setValue(person);
+        m_Ref.addValueEventListener(mQueryEventListener);//select * from db
+        //select * from db where name="abc";
+        /*
+            m_Ref.orderByChild("name").euqalTo("Ali").addValueEventListener(mQueryEventListener);
+            order by name
+            m_Ref.orderByChild("name").addValueEventListener(mQueryEventListener);
+
+            age>30
+            m_Ref.orderByChild("age").startAt(30).addValueEventListener(mQueryEventListener);
+            same for endig endAt
+            limit by 3
+            m_Ref.limitToFirst(2).addValue.....
+         */
+
 
     }
 
