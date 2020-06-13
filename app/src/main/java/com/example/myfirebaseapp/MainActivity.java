@@ -4,14 +4,17 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,8 +22,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DatabaseReference;
@@ -31,6 +36,8 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Timer;
@@ -49,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar mProgressBar;
     private boolean mGranted;
     private TextView mProgressText;
+    private ImageView mImageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,26 +77,52 @@ public class MainActivity extends AppCompatActivity {
 
 
         m_ReadData.setVisibility(View.INVISIBLE);
+        getPermissions();
 
     }
 
 
     private void sendData() {
-        //this particular code will ask the permission inside the app to open gallery
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!mGranted) {
-                if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
-                    return;
-                }
-            }
-        }
-        //code to open gallery as sson as this is triggered onAcrivityResult will be called
-        Intent intent = new Intent();
-        intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(Intent.createChooser(intent, "Select an image"), PICK_IMAGE_REQUEST);
+//        //this particular code will ask the permission inside the app to open gallery
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            if (!mGranted) {
+//                if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+//                    requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+//                    return;
+//                }
+//            }
+//        }
+//        //code to open gallery as sson as this is triggered onAcrivityResult will be called
+//        Intent intent = new Intent();
+//        intent.setType("image/*");
+//        intent.setAction(Intent.ACTION_GET_CONTENT);
+//        startActivityForResult(Intent.createChooser(intent, "Select an image"), PICK_IMAGE_REQUEST);
+        final File outputFile = new File(Environment.getExternalStorageDirectory(), "image.png");
+        long ONE_MEGABYTE = 1024 * 1024;
+        storageReference.child("images/image.jpg").getBytes(ONE_MEGABYTE)//hardocded image
+                .addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                    @Override
+                    public void onSuccess(byte[] bytes) {
 
+                        mImageView.setImageBitmap(BitmapFactory.decodeByteArray(bytes,0,bytes.length));
+                        Toast.makeText(MainActivity.this, "File Downloaded", Toast.LENGTH_SHORT).show();
+
+                        try {
+                            FileOutputStream fos = new FileOutputStream(outputFile);
+                            fos.write(bytes);
+                            fos.close();//this code will store the image with the name given above
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(MainActivity.this, "Download error", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private Bitmap readImage() {
@@ -117,7 +151,23 @@ public class MainActivity extends AppCompatActivity {
         m_ReadData = findViewById(R.id.read_data);
         mProgressBar = findViewById(R.id.progress_circular);
         mProgressText = findViewById(R.id.loading_text);
+        mImageView=findViewById(R.id.imageView);
     }
+
+    private void getPermissions() {
+
+        String externalReadPermission = Manifest.permission.READ_EXTERNAL_STORAGE;
+        String externalWritePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+
+        if (ContextCompat.checkSelfPermission(this, externalReadPermission) != PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(this, externalWritePermission) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{externalReadPermission, externalWritePermission}, STORAGE_PERMISSION_CODE);
+            }
+        }
+
+    }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
