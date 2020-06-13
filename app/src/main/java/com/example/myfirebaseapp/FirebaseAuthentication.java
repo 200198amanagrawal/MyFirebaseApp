@@ -12,10 +12,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 
 public class FirebaseAuthentication extends AppCompatActivity {
@@ -25,6 +29,8 @@ public class FirebaseAuthentication extends AppCompatActivity {
     private TextView mOutputText;
     private ProgressBar mProgressBar;
     private FirebaseAuth mAuth;
+    private FirebaseAuth.AuthStateListener mAuthStateListener;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,6 +58,15 @@ public class FirebaseAuthentication extends AppCompatActivity {
             }
         });
         hideProgressBar();
+
+        //this will be basically used in onResume because it will automatically update for any changes occuring
+        //in this particular code.
+        mAuthStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                updateUI();
+            }
+        };
     }
     private void initViews() {
         mEmailLayout = findViewById(R.id.et_email);
@@ -83,10 +98,16 @@ public class FirebaseAuthentication extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             hideProgressBar();
                             Toast.makeText(FirebaseAuthentication.this, "User logged in", Toast.LENGTH_SHORT).show();
-                            updateUI();
+          //                  updateUI();
                         } else {
-                            Toast.makeText(FirebaseAuthentication.this, "Error occurred", Toast.LENGTH_SHORT).show();
                             hideProgressBar();
+                            if (task.getException() instanceof FirebaseAuthInvalidCredentialsException) {
+                                Toast.makeText(FirebaseAuthentication.this, "Invalid Password", Toast.LENGTH_SHORT).show();
+                                mOutputText.setText("Invalid Password");
+                            } else if (task.getException() instanceof FirebaseAuthInvalidUserException) {
+                                Toast.makeText(FirebaseAuthentication.this, "Email not is use", Toast.LENGTH_SHORT).show();
+                                mOutputText.setText("Email not in use");
+                            }
                         }
 
                     }
@@ -112,17 +133,26 @@ public class FirebaseAuthentication extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             Toast.makeText(FirebaseAuthentication.this, "User created", Toast.LENGTH_SHORT).show();
                             hideProgressBar();
-                            updateUI();
+                   //         updateUI();
                         } else {
                             Toast.makeText(FirebaseAuthentication.this, "Error occurred", Toast.LENGTH_SHORT).show();
                             hideProgressBar();
                         }
                     }
-                });
+                }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                hideProgressBar();
+                if (e instanceof FirebaseAuthUserCollisionException) {
+                    Toast.makeText(FirebaseAuthentication.this, "Email already in use", Toast.LENGTH_SHORT).show();
+                    mOutputText.setText("Email already in use");
+                }
+            }
+        });
     }
     private void signOutUser(View view) {
         mAuth.signOut();
-        updateUI();
+  //      updateUI();
     }
     private void updateUI() {
 
@@ -136,11 +166,7 @@ public class FirebaseAuthentication extends AppCompatActivity {
             mOutputText.setText(user.getEmail());
         }
     }
-    @Override
-    protected void onStart() {
-        super.onStart();
-        updateUI();
-    }
+
     private boolean validateEmailAddress() {
 
         String email = mEmailLayout.getEditText().getText().toString().trim();
@@ -179,5 +205,20 @@ public class FirebaseAuthentication extends AppCompatActivity {
 
     private void hideProgressBar() {
         mProgressBar.setVisibility(View.GONE);
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mAuth.addAuthStateListener(mAuthStateListener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mAuthStateListener != null) {
+            if (mAuth == null) {
+                mAuth.removeAuthStateListener(mAuthStateListener);
+            }
+        }
     }
 }
