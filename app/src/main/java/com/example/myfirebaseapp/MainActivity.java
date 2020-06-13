@@ -1,6 +1,7 @@
 package com.example.myfirebaseapp;
 
 import android.Manifest;
+import android.app.DownloadManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -97,23 +98,46 @@ public class MainActivity extends AppCompatActivity {
 //        intent.setType("image/*");
 //        intent.setAction(Intent.ACTION_GET_CONTENT);
 //        startActivityForResult(Intent.createChooser(intent, "Select an image"), PICK_IMAGE_REQUEST);
-        final File outputFile = new File(Environment.getExternalStorageDirectory(), "image.png");
+//        final File outputFile = new File(Environment.getExternalStorageDirectory(), "image.png");
+//        long ONE_MEGABYTE = 1024 * 1024;
+//        storageReference.child("images/image.jpg").getBytes(ONE_MEGABYTE)//hardocded image
+//                .addOnSuccessListener(new OnSuccessListener<byte[]>() {
+//                    @Override
+//                    public void onSuccess(byte[] bytes) {
+//
+//                        mImageView.setImageBitmap(BitmapFactory.decodeByteArray(bytes,0,bytes.length));
+//                        Toast.makeText(MainActivity.this, "File Downloaded", Toast.LENGTH_SHORT).show();
+//
+//                        try {
+//                            FileOutputStream fos = new FileOutputStream(outputFile);
+//                            fos.write(bytes);
+//                            fos.close();//this code will store the image with the name given above
+//                        } catch (Exception e) {
+//                            e.printStackTrace();
+//                        }
+//
+//                    }
+//                })
+//                .addOnFailureListener(new OnFailureListener() {
+//                    @Override
+//                    public void onFailure(@NonNull Exception e) {
+//                        Toast.makeText(MainActivity.this, "Download error", Toast.LENGTH_SHORT).show();
+//                    }
+//                });
+        /*
+        File outputFile = new File(Environment.getExternalStorageDirectory(), "mynewimage.jpeg");
+
         long ONE_MEGABYTE = 1024 * 1024;
-        storageReference.child("images/image.jpg").getBytes(ONE_MEGABYTE)//hardocded image
-                .addOnSuccessListener(new OnSuccessListener<byte[]>() {
+
+        mRef.child("images/90").getFile(outputFile)
+                .addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                     @Override
-                    public void onSuccess(byte[] bytes) {
+                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
 
-                        mImageView.setImageBitmap(BitmapFactory.decodeByteArray(bytes,0,bytes.length));
                         Toast.makeText(MainActivity.this, "File Downloaded", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "onSuccess: File Downloaded: " + outputFile);
 
-                        try {
-                            FileOutputStream fos = new FileOutputStream(outputFile);
-                            fos.write(bytes);
-                            fos.close();//this code will store the image with the name given above
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        mImageView.setImageURI(Uri.fromFile(outputFile));
 
                     }
                 })
@@ -121,10 +145,43 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         Toast.makeText(MainActivity.this, "Download error", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "onFailure: Error: " + e.getMessage());
+                    }
+                });
+         */
+        storageReference.child("images/image.jpg").getDownloadUrl()
+                .addOnSuccessListener(new OnSuccessListener<Uri>() {
+                    @Override
+                    public void onSuccess(Uri uri) {
+
+                        Toast.makeText(MainActivity.this, "URL received", Toast.LENGTH_SHORT).show();
+
+                        downloadFile(uri);
+
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(MainActivity.this, "Some error occured", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
+    private void downloadFile(Uri uri) {
 
+        File file = new File(Environment.getExternalStorageDirectory(), "image.jpg");
+
+        DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+
+        DownloadManager.Request request = new DownloadManager.Request(uri)
+                .setTitle("File Download")//this will appear as a noti while downloading
+                .setDescription("This is file download demo")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationUri(Uri.fromFile(file));
+
+        downloadManager.enqueue(request);
+
+    }
     private Bitmap readImage() {
         InputStream inputStream = null;
         try {
