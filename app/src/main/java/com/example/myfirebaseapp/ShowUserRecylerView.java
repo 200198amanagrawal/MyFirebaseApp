@@ -7,15 +7,9 @@ import android.widget.SearchView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
 
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -26,40 +20,22 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class ShowUserRecylerView extends AppCompatActivity {
 
-    private EditText m_writeData,m_writeDataInt;
-    private Button m_SendData,m_ReadData;
-    private FirebaseDatabase m_Database;
-    private DatabaseReference m_Ref;
-    private String TAG="MyTag";
-    private ChildEventListener listener;
     private RecyclerView recyclerView;
     private UserAdapter userAdapter;
     private List<User> list;
-
+    private FirebaseDatabase m_Database;
+    private DatabaseReference m_Ref;
+    private ChildEventListener listener;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        initialize();
-
-        m_writeData.setVisibility(View.GONE);
-        m_ReadData.setVisibility(View.GONE);
-        m_Database=FirebaseDatabase.getInstance();//this method will get the firebase whole instance;
-        m_Ref=m_Database.getReference("users");//this will take up the root node of the firebase json db.
-        //here we are writing 'users' which will basically create a node inside the root instance with the same name.
-        m_SendData.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendData();
-            }
-        });
-
+        setContentView(R.layout.activity_show_user_recyler_view);
+        recyclerView=findViewById(R.id.user_view);
+        m_Database=FirebaseDatabase.getInstance();
+        m_Ref=m_Database.getReference("users");
         list=new ArrayList<>();
-
-        m_ReadData.setVisibility(View.INVISIBLE);
-
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         userAdapter=new UserAdapter(this,list);
         recyclerView.setAdapter(userAdapter);
@@ -102,25 +78,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        m_Ref.removeEventListener(listener);
-    }
-
-    private void sendData() {
-        Intent intent=new Intent(MainActivity.this,ShowUserRecylerView.class);
-        startActivity(intent);
-    }
-
-    private void initialize() {
-        m_writeData=findViewById(R.id.write_data);
-        m_writeDataInt=findViewById(R.id.write_int_data);
-        m_SendData=findViewById(R.id.send_data);
-        m_ReadData=findViewById(R.id.read_data);
-        recyclerView=findViewById(R.id.user_recyclerview);
-    }
-
-    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
         getMenuInflater().inflate(R.menu.app_bar_menu,menu);
@@ -133,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                userAdapter.getFilter().filter(query);
                 return true;
             }
 

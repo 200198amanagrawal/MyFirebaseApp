@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,23 +16,27 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 //this class will always be extedned with MyHolder as holder defined below at line 30.
-public class UserAdapter extends RecyclerView.Adapter<UserAdapter.MyHolder> {
+public class UserAdapter extends RecyclerView.Adapter<UserAdapter.MyHolder> implements Filterable {
 
     private Context mContext;
     private List<User> mDataList;//the data whoch we will show i.e. User POJO created
+    private List<User> mDataListFull;
 
     public UserAdapter(Context mContext, List<User> mDataList) {
         this.mContext = mContext;
         this.mDataList = mDataList;
+        mDataListFull=new ArrayList<>(mDataList);
     }
 
     @NonNull
     @Override
     public MyHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view= LayoutInflater.from(mContext).inflate(R.layout.list_item,parent,false);
+        View view= LayoutInflater.from(parent.getContext()).inflate(R.layout.list_item,parent,false);
         return new MyHolder(view);//this will takeup the view of the list of items and place over recyler view
     }
 
@@ -81,4 +87,37 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.MyHolder> {
         }
     }
 
+    @Override
+    public Filter getFilter() {//yhis is the function which is generated using the Filterable implements
+        return userDatFilter;
+    }
+    private Filter userDatFilter=new Filter() {
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {//thid function is used to filter out the element and applies the filter logic
+            List<User> filteredList = new ArrayList<>();
+
+            if(constraint == null || constraint.length() == 0){
+                filteredList.addAll(mDataListFull);//mDataListFull is a backup arraylist which contains the following searched filter
+            }else {
+
+                String filter=constraint.toString().toLowerCase().trim();
+
+                for(User dataItem:mDataListFull){
+                    if(dataItem.getName().toLowerCase().contains(filter)){
+                        filteredList.add(dataItem);
+                    }
+                }
+            }
+            FilterResults results=new FilterResults();
+            results.values = filteredList;
+
+            return results;//this result will be called in the below method.
+        }
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            mDataList.clear();
+            mDataList.addAll((Collection<? extends User>) results.values);
+            notifyDataSetChanged();
+        }
+    };
 }
